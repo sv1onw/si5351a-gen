@@ -63,13 +63,13 @@ _________________________________________________________________
  
  Example: {11008200,3276800,1}, will result in
  LCD display: 14,285000 MHz
- CLK1 output:  3,276800 MHz 
- CLK2 output: 11,008200 MHz
+ CLK1 output: 11,008200 MHz 
+ CLK2 output: 3,276800 MHz
  
  Enter any number of Band Select frequencies.  
  Use (0,0,0) as the last entry.    
  
- Restrict frequency entries to > 1 MHz and < 80 MHz
+ Restrict frequency entries to > 1 MHz and < 112,5 MHz
  
  ___________Enter Band Select frequencies below_____________________
  */
@@ -103,7 +103,7 @@ int fOffset = -600;        // -600 Hz offset for CW operation activated by Pin A
 //  - Annotate counter frequency in Hz
 //  - Subtract 27 MHz from counter reading 
 //  - Enter the difference in Hz (i.e. -245)
-int CalFactor = -1327; //This is my personal Si5351 module clock deviation
+int CalFactor = 0; //This value needs to be modified accordingly
 
 //_________________________Enter frequency limits (KHz) below:__________________________________
 const unsigned long F_min = 1000000;    // Lower Frequency Limit 1 MHz
