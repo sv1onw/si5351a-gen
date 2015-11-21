@@ -15,7 +15,7 @@
  
  v5 12 July, 2015  Corrected band select algorithm
   
- v5.1 16 November, 2015 Changed Clock Frequency to 27 MHz, added logon msg,
+ v5.1.2 16 November, 2015 Changed Clock Frequency to 27 MHz, added logon msg,
  changed starting resolution (fstep) to 1 KHz, added 27 MHz calibration frequency
  as last Band,changed QRP Band frequencies for Region 1, added some of my popular
  QRP frequencies, added the Valise QRP offsets for 20 and 40 meters,
@@ -58,12 +58,12 @@ _________________________________________________________________
  Column 2 = CLK2 LO frequency in Hz
  Column 3 = LCD display arithmetic operation 
  0 = no change
- 1 = Add CLK1 and CLK2
- 2 = Subtract CLK1 from CLK2  
+ 1 = Add CLK2 and CLK1
+ 2 = Subtract CLK2 from CLK1 
  
- Example: {3276800,11008200,1}, will result in
- LCD display: 14.285000 MHz
- CLK1 output: 3.276800 MHz 
+ Example: {11008200,3276800,1}, will result in
+ LCD display: 14,285000 MHz
+ CLK1 output:  3,276800 MHz 
  CLK2 output: 11,008200 MHz
  
  Enter any number of Band Select frequencies.  
@@ -74,7 +74,7 @@ _________________________________________________________________
  ___________Enter Band Select frequencies below_____________________
  */
 const unsigned long Freq_array [] [3] = {
-  { 14070000,0,0       },            // CLK1=14.070 MHz, CLK2=0 MHz, Display=14,070.000 KHz
+  { 14070000,0,0       },     // CLK1=14.070 MHz, CLK2=0 MHz, Display=14,070.000 KHz
   { 14060000,0,0       },            
   {  7030000,0,0       },
   {  3560000,0,0       },
@@ -85,10 +85,10 @@ const unsigned long Freq_array [] [3] = {
   { 24906000,0,0       },
   { 28060000,0,0       },
   { 50060000,0,0       },
-  { 3276800,11008200,1 },      // CLK1:3,276800 MHz, CLK2:11,082200 MHz, Display:14,285.000 KHz
-  { 4915200,12005200,2 },      // CLK1:4,915200 MHz, CLK2:12,005200 MHz, Display:7,090.000 KHz
-  { 4915200,12100200,2 },      // CLK1:4,915200 MHz, CLK2:12,100200 MHz, Display:7,185.000 KHz    
-  { 27000000,0,0       },     //  CLK1 has the Calibration Frequency of 27 MHz for easy selection
+  { 11008200,3276800,1 },      // CLK1:11,082200 MHz, CLK2:3,276800 MHz, Display:14,285.000 KHz
+  { 12005200,4915200,2 },      // CLK1:12,005200 MHz, CLK2:4,915200 MHz, Display:7,090.000 KHz
+  { 12100200,4915200,2 },      // CLK1:12,100200 MHz, CLK2:4,915200 MHz, Display:7,185.000 KHz    
+  { 27000000,0,0       },      // CLK1 has the Calibration Frequency of 27 MHz for easy selection
   (0,0,0)
   };
 
@@ -158,7 +158,7 @@ char buffer[300] = "";
 int IndiceCount=0,StartCount=0,counter=0,indices[13];
 unsigned int tcount=2,encoderA,encoderB,encoderC=1;
 unsigned long time,fStep=1000,XtalFreq=27000000;
-unsigned long mult=0,Freq_1,Freq_2,debounce,DebounceDelay=500000;
+unsigned long mult=0,Freq_1,Freq_2,prevFreq,debounce,DebounceDelay=500000;
 
 //******************************************************************
 // Clock - interrupt routine used as master timekeeper
@@ -242,7 +242,7 @@ void setup()
   lcd.print("Si5351 PLL Synth");
   lcd.setCursor(0,1);
   lcd.print("V.5.1  de SV1ONW");
-  delay (4000);
+  delay (3000);
   lcd.clear();
   lcd.setCursor(0,1);
   {
@@ -256,7 +256,7 @@ void setup()
   Freq_1 = Freq_array [0] [0];            // At start up load the first band in the the
   Freq_2 = Freq_array [0] [1];            // Freq_array variable.
 
-  // Set CLK0 to 2.5 MHz
+  // Set CLK0 to 2.7 MHz
   si5351aSetFreq(SYNTH_MS_0,2700000); 
 
   if(Freq_2 == 0)
@@ -290,6 +290,7 @@ void loop()
       tcount=2;
     }
 
+    prevFreq = Freq_1;
     // Rotary encoder algorithm begins here
     byte encoderA = digitalRead(encoderPinA); 
     byte encoderB = digitalRead(encoderPinB);
@@ -360,7 +361,7 @@ void loop()
       setfreq();                                      // Display and set CLK1 frequency + offset
     }
 
-    if(digitalRead(Offset) == HIGH && offsetFlag == 1) // Check for offset pn A2 HIGH
+    if(digitalRead(Offset) == HIGH && offsetFlag == 1) // Check for offset pin A2 HIGH
     {
       offsetFlag = 0;                                  // Reset flag
       Freq_1 -= fOffset;                               // Subtract the offset frequency
@@ -378,7 +379,7 @@ void loop()
       Freq_1 += fStep;                                // Increase CLK1 by frequency step   
       if (Freq_1 > F_max)
      {
-     (Freq_1 = F_max);
+     Freq_1 = F_max;
      }
       setfreq();                                      // Set and display new frequency
       resDisplay();                                   // Call the resolution display subroutine
@@ -392,7 +393,7 @@ void loop()
       Freq_1 -= fStep;                               // Decrease CLK1 by frequency step 
       if (Freq_1 < F_min)
      {
-     (Freq_1 = F_min);
+     Freq_1 = F_min;
      }
       setfreq();                                     // Set and display new frequency
       resDisplay();                                  // Call the resolution display subroutine
@@ -409,13 +410,24 @@ void setfreq()
   unsigned long  Freq_temp = Freq_1; // Temporarily store Freq_1
   switch(Freq_array [band] [2])      // Get math function from frequency array
   {
-  case 1:  // If math function is 1 then add Freq_1 and Freq_2 for display
+  case 1:  // If math function is 1 then add Freq_2 and Freq_1 for display
     Freq_temp = Freq_1 + Freq_2;
     break;
-  case 2:  // If math function is 2 then subtract Freq_1 from Freq_2 for display
-    Freq_temp = Freq_2 - Freq_1;
+  case 2:  // If math function is 2 then subtract Freq_2 from Freq_1 for display
+    Freq_temp = Freq_1 - Freq_2;
     break;
   }
+  if (Freq_temp > F_max) //Check the upper Frequency limit
+        {
+            Freq_temp = F_max; 
+            Freq_1 = prevFreq;
+        }
+  else if (Freq_temp < F_min) //Check the lower Frequency limit  
+        {                         
+            Freq_temp = F_min;
+            Freq_1 = prevFreq;
+        } 
+        
   char buf[10];
 
   // Print frequency to the LCD
