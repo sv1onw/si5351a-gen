@@ -21,6 +21,9 @@
  QRP frequencies, added the Valise QRP offsets for 20 and 40 meters,
  set Frequency start/lower & stop/upper limits.Deleted GPS assisted frequency
  correction function as it was out of my simple project scope   
+ 
+ V5.20.1 January 2020 Corrected pushbutton debounce issue as per Gene's updates in 
+ original project
  Mods by Konstantinos SV1ONW
  
  ---------------------------------------------------------------------------
@@ -241,7 +244,7 @@ void setup()
   lcd.setCursor(0,0);
   lcd.print("Si5351 PLL Synth");
   lcd.setCursor(0,1);
-  lcd.print("V.5.1  de SV1ONW");
+  lcd.print("V.5.20.1 SV1ONW");
   delay (3000);
   lcd.clear();
   lcd.setCursor(0,1);
@@ -323,8 +326,7 @@ void loop()
     // The frequency step resolution selection begins here:
     if(digitalRead(Resolution) == LOW)
     {
-      for(debounce=0; debounce < DebounceDelay; debounce++) {
-      };
+      for(debounce=0; debounce < DebounceDelay; debounce++) {__asm__ __volatile__ ("nop");};
       fStepcount++;
       if(fStepcount>6)fStepcount=0;
       setResolution();     // Call the set resolution subroutine
@@ -333,8 +335,7 @@ void loop()
     // Band selection begins here:
     if(digitalRead(BandSelect) == LOW)
     {
-      for(debounce=0; debounce < DebounceDelay; debounce++) {
-      };
+      for(debounce=0; debounce < DebounceDelay; debounce++) {__asm__ __volatile__ ("nop");};
       band=band+1;                        // Increment band selection
       if(Freq_array [band] [0]==0)band=0; // Check for end of frequency array
       if(Freq_array [band] [1] == 0)      // Is CLK2 = 0? 
@@ -373,8 +374,7 @@ void loop()
     // Frequency Up/Down pushbutton algorithm begin here:
     if(digitalRead(FreqUp) == LOW)  // Check for frequency up pushbutton A1 LOW
     {
-      for(debounce=0; debounce < DebounceDelay; debounce++) {
-      };
+      for(debounce=0; debounce < DebounceDelay; debounce++) {__asm__ __volatile__ ("nop");};
       // Increase frequency by the selected frequency step 
       Freq_1 += fStep;                                // Increase CLK1 by frequency step   
       if (Freq_1 > F_max)
@@ -387,8 +387,7 @@ void loop()
 
     if(digitalRead(FreqDown) == LOW) // Check for frequency up pushbutton A1 LOW
     {
-      for(debounce=0; debounce < DebounceDelay; debounce++) {
-      };
+      for(debounce=0; debounce < DebounceDelay; debounce++) {__asm__ __volatile__ ("nop");};
       // Decrease frequency by the selected frequency step and check for 1-80 MHz limits 
       Freq_1 -= fStep;                               // Decrease CLK1 by frequency step 
       if (Freq_1 < F_min)
